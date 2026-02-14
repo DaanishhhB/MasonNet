@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import 'api_config.dart';
+import 'socket_service.dart';
 
 class AuthService {
   static String? _token;
@@ -22,6 +23,9 @@ class AuthService {
         _currentUser = AppUser.fromJson(json.decode(userData));
         // Verify token is still valid
         final refreshed = await fetchMe();
+        if (refreshed && _token != null) {
+          SocketService.connect(_token!);
+        }
         return refreshed;
       } catch (e) {
         await logout();
@@ -57,6 +61,7 @@ class AuthService {
         _token = data['token'];
         _currentUser = AppUser.fromJson(data['user']);
         await _persist();
+        SocketService.connect(_token!);
         return null; // success
       } else {
         return data['error'] ?? 'Registration failed';
@@ -83,6 +88,7 @@ class AuthService {
         _token = data['token'];
         _currentUser = AppUser.fromJson(data['user']);
         await _persist();
+        SocketService.connect(_token!);
         return null; // success
       } else {
         return data['error'] ?? 'Login failed';
@@ -145,6 +151,7 @@ class AuthService {
 
   /// Logout
   static Future<void> logout() async {
+    SocketService.disconnect();
     _token = null;
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();

@@ -30,6 +30,11 @@ router.post('/channel/:channelId', auth, async (req, res) => {
       channelId: req.params.channelId,
     });
     await message.save();
+
+    // Emit to channel room for real-time updates
+    const io = req.app.get('io');
+    io.to(`channel:${req.params.channelId}`).emit('new-channel-message', message.toJSON());
+
     res.status(201).json(message);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -68,6 +73,11 @@ router.post('/dm/:partnerId', auth, async (req, res) => {
       dmParticipants: [user._id.toString(), partnerId].sort(),
     });
     await message.save();
+
+    // Emit to partner's personal room for real-time DM delivery
+    const io = req.app.get('io');
+    io.to(`user:${partnerId}`).emit('new-dm', message.toJSON());
+
     res.status(201).json(message);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

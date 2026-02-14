@@ -4,6 +4,7 @@ import '../../models/message.dart';
 import '../../models/user.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
+import '../../services/socket_service.dart';
 
 class DmChatScreen extends StatefulWidget {
   final String partnerId;
@@ -16,6 +17,7 @@ class DmChatScreen extends StatefulWidget {
 
 class _DmChatScreenState extends State<DmChatScreen> {
   final _controller = TextEditingController();
+  final _scrollController = ScrollController();
   List<Message> _messages = [];
   AppUser? _partner;
   bool _loading = true;
@@ -24,6 +26,30 @@ class _DmChatScreenState extends State<DmChatScreen> {
   void initState() {
     super.initState();
     _loadData();
+    SocketService.onDm(_onNewDm);
+  }
+
+  void _onNewDm(dynamic data) {
+    final msg = Message.fromJson(Map<String, dynamic>.from(data));
+    // Only add if the DM is from the current partner
+    if (msg.senderId == widget.partnerId) {
+      if (mounted) {
+        setState(() => _messages.add(msg));
+        _scrollToBottom();
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _loadData() async {
@@ -46,7 +72,9 @@ class _DmChatScreenState extends State<DmChatScreen> {
 
   @override
   void dispose() {
+    SocketService.offDm(_onNewDm);
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -102,6 +130,7 @@ class _DmChatScreenState extends State<DmChatScreen> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, i) {

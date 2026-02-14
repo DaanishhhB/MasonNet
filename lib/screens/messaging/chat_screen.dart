@@ -4,6 +4,7 @@ import '../../models/course.dart';
 import '../../models/message.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
+import '../../services/socket_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final Channel channel;
@@ -17,6 +18,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
+  final _scrollController = ScrollController();
   List<Message> _messages = [];
   bool _loading = true;
 
@@ -24,6 +26,32 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
+    SocketService.joinChannel(widget.channel.id);
+    SocketService.onChannelMessage(_onNewMessage);
+  }
+
+  void _onNewMessage(dynamic data) {
+    final msg = Message.fromJson(Map<String, dynamic>.from(data));
+    // Only add if it's for this channel and not sent by me (I already add mine locally)
+    if (msg.channelId == widget.channel.id &&
+        msg.senderId != (AuthService.currentUser?.id ?? '')) {
+      if (mounted) {
+        setState(() => _messages.add(msg));
+        _scrollToBottom();
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _loadMessages() async {
@@ -42,7 +70,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    SocketService.offChannelMessage(_onNewMessage);
+    SocketService.leaveChannel(widget.channel.id);
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -89,6 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   )
                 : ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     itemCount: _messages.length,
                     itemBuilder: (context, i) {
