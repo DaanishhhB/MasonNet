@@ -352,6 +352,20 @@ class ApiService {
     throw Exception('Failed to upload document');
   }
 
+  // ─── Chatbot ───
+  static Future<String> sendChatbotMessage(String message, List<Map<String, String>> history) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/chatbot'),
+      headers: _headers,
+      body: json.encode({'message': message, 'history': history}),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['reply'] ?? '';
+    }
+    throw Exception('Failed to get chatbot response');
+  }
+
   // ─── Users ───
   static Future<AppUser> getUser(String userId) async {
     final response = await http.get(

@@ -1,0 +1,300 @@
+import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
+import '../../services/api_service.dart';
+
+class ChatbotScreen extends StatefulWidget {
+  const ChatbotScreen({super.key});
+
+  @override
+  State<ChatbotScreen> createState() => _ChatbotScreenState();
+}
+
+class _ChatbotScreenState extends State<ChatbotScreen> {
+  final _controller = TextEditingController();
+  final _scrollController = ScrollController();
+  final List<_ChatMessage> _messages = [];
+  bool _isLoading = false;
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _isLoading) return;
+
+    _controller.clear();
+    setState(() {
+      _messages.add(_ChatMessage(role: 'user', content: text));
+      _isLoading = true;
+    });
+    _scrollToBottom();
+
+    try {
+      // Build history from previous messages (exclude the one we just sent)
+      final history = _messages
+          .sublist(0, _messages.length - 1)
+          .map((m) => {'role': m.role, 'content': m.content})
+          .toList();
+
+      final reply = await ApiService.sendChatbotMessage(text, history);
+      if (mounted) {
+        setState(() {
+          _messages.add(_ChatMessage(role: 'bot', content: reply));
+          _isLoading = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add(_ChatMessage(role: 'bot', content: 'Sorry, I encountered an error. Please try again.'));
+          _isLoading = false;
+        });
+        _scrollToBottom();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Row(
+          children: [
+            Icon(Icons.smart_toy, color: AppTheme.gmuGreen, size: 24),
+            SizedBox(width: 8),
+            Text('MasonBot', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _messages.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.smart_toy_outlined, size: 64, color: AppTheme.gmuGreen.withValues(alpha: 0.5)),
+                        const SizedBox(height: 16),
+                        const Text('MasonBot', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Ask me about your courses,\ndocuments, and study materials!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                        ),
+                        const SizedBox(height: 24),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _SuggestionChip(
+                              label: 'What documents are available?',
+                              onTap: () {
+                                _controller.text = 'What documents are available?';
+                                _sendMessage();
+                              },
+                            ),
+                            _SuggestionChip(
+                              label: 'Tell me about my courses',
+                              onTap: () {
+                                _controller.text = 'Tell me about my courses';
+                                _sendMessage();
+                              },
+                            ),
+                            _SuggestionChip(
+                              label: 'Help me study',
+                              onTap: () {
+                                _controller.text = 'Can you help me study?';
+                                _sendMessage();
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length + (_isLoading ? 1 : 0),
+                    itemBuilder: (context, i) {
+                      if (i == _messages.length && _isLoading) {
+                        return const _TypingIndicator();
+                      }
+                      final msg = _messages[i];
+                      final isUser = msg.role == 'user';
+                      return _MessageBubble(message: msg, isUser: isUser);
+                    },
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceDark,
+              border: Border(top: BorderSide(color: AppTheme.dividerDark)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: 'Ask MasonBot...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      filled: true,
+                      fillColor: AppTheme.cardDark,
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                    enabled: !_isLoading,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: _isLoading ? Colors.grey : AppTheme.gmuGreen,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white, size: 18),
+                    onPressed: _isLoading ? null : _sendMessage,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatMessage {
+  final String role;
+  final String content;
+
+  _ChatMessage({required this.role, required this.content});
+}
+
+class _MessageBubble extends StatelessWidget {
+  final _ChatMessage message;
+  final bool isUser;
+
+  const _MessageBubble({required this.message, required this.isUser});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+        decoration: BoxDecoration(
+          color: isUser ? AppTheme.gmuGreen : AppTheme.cardDark,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser ? 16 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 16),
+          ),
+        ),
+        child: isUser
+            ? Text(message.content, style: const TextStyle(fontSize: 14))
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.smart_toy, size: 16, color: AppTheme.gmuGreen),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: SelectableText(
+                      message.content,
+                      style: const TextStyle(fontSize: 14, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _TypingIndicator extends StatelessWidget {
+  const _TypingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.cardDark,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.smart_toy, size: 16, color: AppTheme.gmuGreen),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 40,
+              child: LinearProgressIndicator(
+                color: AppTheme.gmuGreen,
+                backgroundColor: AppTheme.gmuGreen.withValues(alpha: 0.2),
+                minHeight: 3,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SuggestionChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _SuggestionChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppTheme.gmuGreen.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(20),
+          color: AppTheme.gmuGreen.withValues(alpha: 0.1),
+        ),
+        child: Text(label, style: const TextStyle(fontSize: 13, color: AppTheme.gmuGreen)),
+      ),
+    );
+  }
+}

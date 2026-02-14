@@ -8,6 +8,7 @@ import '../classes/class_selection_screen.dart';
 import '../feed/global_feed_screen.dart';
 import '../messaging/dm_list_screen.dart';
 import '../profile/profile_screen.dart';
+import '../chatbot/chatbot_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,6 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_currentIndex],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatbotScreen())),
+        backgroundColor: AppTheme.gmuGreen,
+        child: const Icon(Icons.smart_toy, color: Colors.white),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),

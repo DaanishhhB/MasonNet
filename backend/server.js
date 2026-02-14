@@ -29,6 +29,7 @@ app.use('/api/posts', require('./routes/posts'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/study-sessions', require('./routes/studySessions'));
 app.use('/api/documents', require('./routes/documents'));
+app.use('/api/chatbot', require('./routes/chatbot'));
 
 // Health check
 app.get('/api/health', (req, res) => {
