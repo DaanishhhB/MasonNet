@@ -91,11 +91,15 @@ class ApiService {
     throw Exception('Failed to load messages');
   }
 
-  static Future<Message> sendChannelMessage(String channelId, String content) async {
+  static Future<Message> sendChannelMessage(String channelId, String content, {String? fileUrl, String? fileName, String? fileType}) async {
+    final body = <String, dynamic>{'content': content};
+    if (fileUrl != null) body['fileUrl'] = fileUrl;
+    if (fileName != null) body['fileName'] = fileName;
+    if (fileType != null) body['fileType'] = fileType;
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/messages/channel/$channelId'),
       headers: _headers,
-      body: json.encode({'content': content}),
+      body: json.encode(body),
     );
     if (response.statusCode == 201) {
       return Message.fromJson(json.decode(response.body));
@@ -115,11 +119,15 @@ class ApiService {
     throw Exception('Failed to load DMs');
   }
 
-  static Future<Message> sendDm(String partnerId, String content) async {
+  static Future<Message> sendDm(String partnerId, String content, {String? fileUrl, String? fileName, String? fileType}) async {
+    final body = <String, dynamic>{'content': content};
+    if (fileUrl != null) body['fileUrl'] = fileUrl;
+    if (fileName != null) body['fileName'] = fileName;
+    if (fileType != null) body['fileType'] = fileType;
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/messages/dm/$partnerId'),
       headers: _headers,
-      body: json.encode({'content': content}),
+      body: json.encode(body),
     );
     if (response.statusCode == 201) {
       return Message.fromJson(json.decode(response.body));

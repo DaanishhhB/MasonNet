@@ -26,8 +26,11 @@ router.post('/channel/:channelId', auth, async (req, res) => {
       senderId: user._id.toString(),
       senderName: user.name,
       senderAvatar: user.avatarUrl,
-      content: req.body.content,
+      content: req.body.content || '',
       channelId: req.params.channelId,
+      fileUrl: req.body.fileUrl || null,
+      fileName: req.body.fileName || null,
+      fileType: req.body.fileType || null,
     });
     await message.save();
 
@@ -68,8 +71,11 @@ router.post('/dm/:partnerId', auth, async (req, res) => {
       senderId: user._id.toString(),
       senderName: user.name,
       senderAvatar: user.avatarUrl,
-      content: req.body.content,
+      content: req.body.content || '',
       dmPartnerId: partnerId,
+      fileUrl: req.body.fileUrl || null,
+      fileName: req.body.fileName || null,
+      fileType: req.body.fileType || null,
       dmParticipants: [user._id.toString(), partnerId].sort(),
     });
     await message.save();

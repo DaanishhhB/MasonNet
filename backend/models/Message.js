@@ -4,8 +4,11 @@ const messageSchema = new mongoose.Schema({
   senderId:    { type: String, required: true },
   senderName:  { type: String, required: true },
   senderAvatar:{ type: String, default: '' },
-  content:     { type: String, required: true },
+  content:     { type: String, default: '' },
   channelId:   { type: String, default: null },
+  fileUrl:     { type: String, default: null },
+  fileName:    { type: String, default: null },
+  fileType:    { type: String, default: null },
   dmPartnerId: { type: String, default: null },
   // For DMs we store both participant IDs for querying
   dmParticipants: [{ type: String }],
