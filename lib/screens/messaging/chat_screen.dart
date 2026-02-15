@@ -333,6 +333,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     itemBuilder: (context, i) {
                       final msg = _messages[i];
                       final isMe = msg.senderId == (AuthService.currentUser?.id ?? '');
+                      final isBot = msg.senderId == 'masonbot';
                       final showAvatar = i == 0 || _messages[i - 1].senderId != msg.senderId;
 
                       return Padding(
@@ -343,8 +344,14 @@ class _ChatScreenState extends State<ChatScreen> {
                             if (showAvatar)
                               CircleAvatar(
                                 radius: 18,
-                                backgroundColor: isMe ? AppTheme.gmuGreen : AppTheme.gmuGold.withValues(alpha: 0.3),
-                                child: Text(msg.senderAvatar, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isMe ? Colors.white : AppTheme.gmuGold)),
+                                backgroundColor: isBot
+                                    ? Colors.teal
+                                    : isMe
+                                        ? AppTheme.gmuGreen
+                                        : AppTheme.gmuGold.withValues(alpha: 0.3),
+                                child: isBot
+                                    ? const Text('🤖', style: TextStyle(fontSize: 16))
+                                    : Text(msg.senderAvatar, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isMe ? Colors.white : AppTheme.gmuGold)),
                               )
                             else
                               const SizedBox(width: 36),
@@ -356,7 +363,24 @@ class _ChatScreenState extends State<ChatScreen> {
                                   if (showAvatar)
                                     Row(
                                       children: [
-                                        Text(msg.senderName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                        Text(
+                                          msg.senderName,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: isBot ? Colors.teal : null,
+                                          ),
+                                        ),
+                                        if (isBot) ...[                                          const SizedBox(width: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: Colors.teal.withValues(alpha: 0.2),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Text('BOT', style: TextStyle(color: Colors.teal, fontSize: 9, fontWeight: FontWeight.bold)),
+                                          ),
+                                        ],
                                         const SizedBox(width: 8),
                                         Text(
                                           _formatTime(msg.timestamp),
@@ -427,7 +451,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: TextField(
                     controller: _controller,
                     decoration: InputDecoration(
-                      hintText: 'Message #${widget.channel.name}',
+                      hintText: 'Message #${widget.channel.name} (use @MasonBot)',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       filled: true,

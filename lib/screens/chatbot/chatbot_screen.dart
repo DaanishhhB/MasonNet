@@ -14,6 +14,66 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final _scrollController = ScrollController();
   final List<_ChatMessage> _messages = [];
   bool _isLoading = false;
+  bool _historyLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final history = await ApiService.getChatHistory();
+      if (mounted) {
+        setState(() {
+          _messages.clear();
+          for (final m in history) {
+            _messages.add(_ChatMessage(role: m['role'] ?? '', content: m['content'] ?? ''));
+          }
+          _historyLoading = false;
+        });
+        if (_messages.isNotEmpty) _scrollToBottom();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _historyLoading = false);
+    }
+  }
+
+  Future<void> _resetChat() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardDark,
+        title: const Text('Reset Chat'),
+        content: const Text('This will clear all chat history with MasonBot. Continue?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await ApiService.resetChatHistory();
+      if (mounted) {
+        setState(() => _messages.clear());
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chat history cleared'), backgroundColor: AppTheme.gmuGreen),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to reset chat'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,8 +142,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             Text('MasonBot', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
+        actions: [
+          if (_messages.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.redAccent),
+              tooltip: 'Reset Chat',
+              onPressed: _resetChat,
+            ),
+        ],
       ),
-      body: Column(
+      body: _historyLoading
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.gmuGreen))
+          : Column(
         children: [
           Expanded(
             child: _messages.isEmpty

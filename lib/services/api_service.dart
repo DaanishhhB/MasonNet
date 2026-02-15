@@ -7,6 +7,7 @@ import '../models/calendar_event.dart';
 import '../models/study_session.dart';
 import '../models/document.dart';
 import '../models/user.dart';
+import '../models/mason_meet.dart';
 import 'api_config.dart';
 import 'auth_service.dart';
 
@@ -366,6 +367,46 @@ class ApiService {
     throw Exception('Failed to get chatbot response');
   }
 
+  // ─── Course-specific Chatbot ───
+  static Future<String> sendCourseChatbotMessage(String courseId, String message, List<Map<String, String>> history) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/chatbot/course/$courseId'),
+      headers: _headers,
+      body: json.encode({'message': message, 'history': history}),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['reply'] ?? '';
+    }
+    throw Exception('Failed to get chatbot response');
+  }
+
+  // ─── Chat History ───
+  static Future<List<Map<String, String>>> getChatHistory({String? courseId}) async {
+    final url = courseId != null
+        ? '${ApiConfig.baseUrl}/chatbot/history/$courseId'
+        : '${ApiConfig.baseUrl}/chatbot/history';
+    final response = await http.get(Uri.parse(url), headers: _headers);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List messages = data['messages'] ?? [];
+      return messages
+          .map<Map<String, String>>((m) => {'role': m['role'] ?? '', 'content': m['content'] ?? ''})
+          .toList();
+    }
+    throw Exception('Failed to load chat history');
+  }
+
+  static Future<void> resetChatHistory({String? courseId}) async {
+    final url = courseId != null
+        ? '${ApiConfig.baseUrl}/chatbot/history/$courseId'
+        : '${ApiConfig.baseUrl}/chatbot/history';
+    final response = await http.delete(Uri.parse(url), headers: _headers);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to reset chat history');
+    }
+  }
+
   // ─── Users ───
   static Future<AppUser> getUser(String userId) async {
     final response = await http.get(
@@ -376,6 +417,143 @@ class ApiService {
       return AppUser.fromJson(json.decode(response.body));
     }
     throw Exception('Failed to load user');
+  }
+
+  // ─── Search Users ───
+  static Future<List<AppUser>> searchUsers(String query) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/auth/search-users?q=${Uri.encodeQueryComponent(query)}'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((j) => AppUser.fromJson(j)).toList();
+    }
+    throw Exception('Failed to search users');
+  }
+
+  // ─── Channels ───
+  static Future<Course> createChannel(String courseId, String name, {String icon = '💬'}) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/courses/$courseId/channels'),
+      headers: _headers,
+      body: json.encode({'name': name, 'icon': icon}),
+    );
+    if (response.statusCode == 201) {
+      return Course.fromJson(json.decode(response.body));
+    }
+    throw Exception('Failed to create channel');
+  }
+
+  // ─── MasonMeets ───
+  static Future<List<MasonMeet>> getMasonMeets() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/mason-meets'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      return data.map((j) => MasonMeet.fromJson(j)).toList();
+    }
+    throw Exception('Failed to load meetups');
+  }
+
+  static Future<MasonMeet> createMasonMeet({
+    required String title,
+    required String description,
+    required String location,
+    required DateTime dateTime,
+    int duration = 60,
+    String category = 'General',
+    int maxAttendees = 0,
+  }) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/mason-meets'),
+      headers: _headers,
+      body: json.encode({
+        'title': title,
+        'description': description,
+        'location': location,
+        'dateTime': dateTime.toIso8601String(),
+        'duration': duration,
+        'category': category,
+        'maxAttendees': maxAttendees,
+      }),
+    );
+    if (response.statusCode == 201) {
+      return MasonMeet.fromJson(json.decode(response.body));
+    }
+    throw Exception('Failed to create meetup');
+  }
+
+  static Future<MasonMeet> rsvpMasonMeet(String meetId, String status) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/mason-meets/$meetId/rsvp'),
+      headers: _headers,
+      body: json.encode({'status': status}),
+    );
+    if (response.statusCode == 200) {
+      return MasonMeet.fromJson(json.decode(response.body));
+    }
+    throw Exception('Failed to RSVP');
+  }
+
+  // ─── Config ───
+  static Future<String> getSupportEmail() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl.replaceAll('/api', '')}/api/config'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['supportEmail'] ?? 'support@masonnet.gmu.edu';
+      }
+    } catch (_) {}
+    return 'support@masonnet.gmu.edu';
+  }
+
+  // ─── Documents (with file data) ───
+  static Future<CourseDocument> uploadDocumentWithFile({
+    required String courseId,
+    required String title,
+    required String description,
+    required String fileType,
+    required String fileSize,
+    required String mimeType,
+    required String fileData,
+    bool isPreviousSemester = false,
+    String semester = 'Spring 2026',
+  }) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/documents'),
+      headers: _headers,
+      body: json.encode({
+        'courseId': courseId,
+        'title': title,
+        'description': description,
+        'fileType': fileType,
+        'fileSize': fileSize,
+        'mimeType': mimeType,
+        'fileData': fileData,
+        'isPreviousSemester': isPreviousSemester,
+        'semester': semester,
+      }),
+    );
+    if (response.statusCode == 201) {
+      return CourseDocument.fromJson(json.decode(response.body));
+    }
+    throw Exception('Failed to upload document');
+  }
+
+  static Future<Map<String, dynamic>> downloadDocument(String docId) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/documents/$docId/download'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception('Failed to download document');
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_theme.dart';
 import '../../models/course.dart';
 import '../../services/auth_service.dart';
@@ -94,6 +95,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showPrivacyPolicy() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardDark,
+        title: const Text('Privacy Policy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'MasonNet Privacy Policy\n\n'
+            'Last updated: 2025\n\n'
+            '1. Information We Collect\n'
+            'We collect your name, email, major, and enrollment information to provide the MasonNet service.\n\n'
+            '2. How We Use Your Information\n'
+            'Your information is used to facilitate course communication, study group organization, and campus community features.\n\n'
+            '3. Data Sharing\n'
+            'We do not sell or share your personal information with third parties. Your data is only visible to other MasonNet users as part of normal app functionality.\n\n'
+            '4. Data Security\n'
+            'We use industry-standard security measures including encrypted passwords and secure API communication.\n\n'
+            '5. Your Rights\n'
+            'You may request deletion of your account and associated data at any time by contacting support.\n\n'
+            '6. Contact\n'
+            'For questions about this policy, please use the Help & Support option.',
+            style: TextStyle(fontSize: 13, height: 1.5),
+          ),
+        ),
+        actions: [
+          ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchSupport() async {
+    try {
+      final email = await ApiService.getSupportEmail();
+      final uri = Uri(scheme: 'mailto', path: email, queryParameters: {
+        'subject': 'MasonNet Help & Support',
+      });
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Email: $email'), backgroundColor: AppTheme.gmuGreen, duration: const Duration(seconds: 5)),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load support email'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService.currentUser;
@@ -167,10 +224,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
             _SectionHeader(title: 'Settings'),
             _MenuItem(icon: Icons.edit, title: 'Edit Profile', onTap: _editProfile),
-            _MenuItem(icon: Icons.notifications_outlined, title: 'Notifications', onTap: () {}),
-            _MenuItem(icon: Icons.color_lens_outlined, title: 'Appearance', onTap: () {}),
-            _MenuItem(icon: Icons.privacy_tip_outlined, title: 'Privacy', onTap: () {}),
-            _MenuItem(icon: Icons.help_outline, title: 'Help & Support', onTap: () {}),
+            _MenuItem(icon: Icons.privacy_tip_outlined, title: 'Privacy', onTap: () => _showPrivacyPolicy()),
+            _MenuItem(icon: Icons.help_outline, title: 'Help & Support', onTap: () => _launchSupport()),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,

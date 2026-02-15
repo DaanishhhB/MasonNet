@@ -106,4 +106,24 @@ router.get('/users/:id', auth, async (req, res) => {
   }
 });
 
+// GET /api/auth/search-users?q=query - Search users by name or email
+router.get('/search-users', auth, async (req, res) => {
+  try {
+    const q = req.query.q || '';
+    if (q.length < 1) return res.json([]);
+
+    const users = await User.find({
+      _id: { $ne: req.userId }, // exclude self
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } },
+      ],
+    }).limit(20);
+
+    res.json(users.map(u => u.toPublicJSON()));
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

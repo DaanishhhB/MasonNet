@@ -8,6 +8,9 @@ const documentSchema = new mongoose.Schema({
   description:  { type: String, default: '' },
   fileType:     { type: String, default: 'PDF' },
   fileSize:     { type: String, default: '0 KB' },
+  mimeType:     { type: String, default: 'application/octet-stream' },
+  fileData:     { type: String, default: null }, // base64 encoded file content
+  extractedText: { type: String, default: '' }, // text extracted from PDFs for chatbot RAG
   isPreviousSemester: { type: Boolean, default: false },
   semester:     { type: String, default: 'Spring 2026' },
   downloads:    { type: Number, default: 0 },

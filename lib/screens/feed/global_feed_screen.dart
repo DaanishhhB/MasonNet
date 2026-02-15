@@ -3,6 +3,7 @@ import '../../theme/app_theme.dart';
 import '../../models/post.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
+import '../../services/socket_service.dart';
 
 class GlobalFeedScreen extends StatefulWidget {
   const GlobalFeedScreen({super.key});
@@ -19,6 +20,35 @@ class _GlobalFeedScreenState extends State<GlobalFeedScreen> {
   void initState() {
     super.initState();
     _loadPosts();
+    SocketService.onNewPost(_onNewPost);
+    SocketService.onPostUpdated(_onPostUpdated);
+  }
+
+  @override
+  void dispose() {
+    SocketService.offNewPost(_onNewPost);
+    SocketService.offPostUpdated(_onPostUpdated);
+    super.dispose();
+  }
+
+  void _onNewPost(dynamic data) {
+    final uid = AuthService.currentUser?.id;
+    final post = FeedPost.fromJson(Map<String, dynamic>.from(data), currentUserId: uid);
+    // Don't duplicate if we already have this post (e.g. from our own creation)
+    if (mounted && !_posts.any((p) => p.id == post.id)) {
+      setState(() => _posts.insert(0, post));
+    }
+  }
+
+  void _onPostUpdated(dynamic data) {
+    final uid = AuthService.currentUser?.id;
+    final updated = FeedPost.fromJson(Map<String, dynamic>.from(data), currentUserId: uid);
+    if (mounted) {
+      final idx = _posts.indexWhere((p) => p.id == updated.id);
+      if (idx != -1) {
+        setState(() => _posts[idx] = updated);
+      }
+    }
   }
 
   Future<void> _loadPosts() async {
@@ -186,12 +216,6 @@ class _PostCard extends StatelessWidget {
                       color: post.isLiked ? Colors.red : Colors.grey,
                       onTap: onLike,
                     ),
-                    const SizedBox(width: 24),
-                    _ActionButton(icon: Icons.chat_bubble_outline, label: '${post.comments}', color: Colors.grey, onTap: () {}),
-                    const SizedBox(width: 24),
-                    _ActionButton(icon: Icons.repeat, label: '${post.reposts}', color: Colors.grey, onTap: () {}),
-                    const SizedBox(width: 24),
-                    _ActionButton(icon: Icons.share_outlined, label: '', color: Colors.grey, onTap: () {}),
                   ],
                 ),
               ],

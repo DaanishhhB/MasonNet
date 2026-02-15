@@ -9,6 +9,7 @@ import '../feed/global_feed_screen.dart';
 import '../messaging/dm_list_screen.dart';
 import '../profile/profile_screen.dart';
 import '../chatbot/chatbot_screen.dart';
+import '../mason_meets/mason_meets_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final _pages = const [
     _DashboardPage(),
-    ClassSelectionScreen(),
+    MasonMeetsScreen(),
     GlobalFeedScreen(),
     DmListScreen(),
     ProfileScreen(),
@@ -43,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.class_outlined), activeIcon: Icon(Icons.class_), label: 'Classes'),
+          BottomNavigationBarItem(icon: Icon(Icons.groups_outlined), activeIcon: Icon(Icons.groups), label: 'Meets'),
           BottomNavigationBarItem(icon: Icon(Icons.public_outlined), activeIcon: Icon(Icons.public), label: 'Feed'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_outlined), activeIcon: Icon(Icons.chat), label: 'DMs'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outlined), activeIcon: Icon(Icons.person), label: 'Profile'),
@@ -61,6 +62,7 @@ class _DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<_DashboardPage> {
+  List<Course> _allCourses = [];
   List<Course> _enrolled = [];
   List<CalendarEvent> _upcomingEvents = [];
   int _studyGroupCount = 0;
@@ -87,6 +89,7 @@ class _DashboardPageState extends State<_DashboardPage> {
 
       if (!mounted) return;
       setState(() {
+        _allCourses = courses;
         _enrolled = enrolled;
         _upcomingEvents = upcoming;
         _studyGroupCount = sessions.length;
@@ -161,7 +164,23 @@ class _DashboardPageState extends State<_DashboardPage> {
                             ],
                           ),
                           const SizedBox(height: 24),
-                          const Text('My Classes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('My Classes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              ElevatedButton.icon(
+                                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClassSelectionScreen())),
+                                icon: const Icon(Icons.add, size: 18),
+                                label: const Text('Add Classes', style: TextStyle(fontWeight: FontWeight.bold)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.gmuGreen,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
                         ],
                       ),
@@ -250,7 +269,10 @@ class _DashboardPageState extends State<_DashboardPage> {
                                       children: [
                                         Text(e.title, style: const TextStyle(fontWeight: FontWeight.w600)),
                                         const SizedBox(height: 2),
-                                        Text(e.courseId, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                                        Text(
+                                          _allCourses.where((c) => c.id == e.courseId).firstOrNull?.code ?? e.courseId,
+                                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                        ),
                                       ],
                                     ),
                                   ),

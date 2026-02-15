@@ -59,11 +59,13 @@ class Channel {
   final String id;
   final String name;
   final String icon;
+  final String? createdBy;
 
   const Channel({
     required this.id,
     required this.name,
     this.icon = '💬',
+    this.createdBy,
   });
 
   factory Channel.fromJson(Map<String, dynamic> json) {
@@ -71,6 +73,7 @@ class Channel {
       id: json['id'] ?? json['_id'] ?? '',
       name: json['name'] ?? '',
       icon: json['icon'] ?? '💬',
+      createdBy: json['createdBy'],
     );
   }
 
@@ -78,5 +81,6 @@ class Channel {
     'id': id,
     'name': name,
     'icon': icon,
+    'createdBy': createdBy,
   };
 }

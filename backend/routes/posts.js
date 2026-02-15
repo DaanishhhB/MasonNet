@@ -37,6 +37,11 @@ router.post('/', auth, async (req, res) => {
 
     const obj = post.toJSON();
     obj.isLiked = false;
+
+    // Emit to feed room for real-time updates
+    const io = req.app.get('io');
+    io.to('feed').emit('new-post', obj);
+
     res.status(201).json(obj);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -64,6 +69,11 @@ router.post('/:id/like', auth, async (req, res) => {
 
     const obj = post.toJSON();
     obj.isLiked = post.likedBy.includes(userId);
+
+    // Emit like update to feed room
+    const io = req.app.get('io');
+    io.to('feed').emit('post-updated', obj);
+
     res.json(obj);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

@@ -10,6 +10,7 @@ import '../messaging/channel_list_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../study_sessions/study_sessions_screen.dart';
 import '../documents/documents_screen.dart';
+import '../chatbot/class_chatbot_screen.dart';
 
 class ClassPageScreen extends StatefulWidget {
   final Course course;
@@ -86,10 +87,11 @@ class _ClassPageScreenState extends State<ClassPageScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(course.code, style: const TextStyle(color: AppTheme.gmuGold, fontWeight: FontWeight.bold, fontSize: 22)),
-                        Text(course.name, style: const TextStyle(color: Colors.white, fontSize: 16)),
-                        const SizedBox(height: 4),
+                        Text(course.name, style: const TextStyle(color: Colors.white, fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 2),
                         Text('${course.instructor} • ${course.location}', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
                         Text('${_students.length} students enrolled', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12)),
                       ],
@@ -131,6 +133,17 @@ class _ClassPageScreenState extends State<ClassPageScreen> {
                   // Sections
                   const Text('Class Sections', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 12),
+
+                  // MasonBot AI
+                  _SectionCard(
+                    icon: Icons.smart_toy,
+                    title: 'MasonBot AI',
+                    subtitle: 'Ask questions about this course',
+                    color: Colors.teal,
+                    onTap: () => Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => ClassChatbotScreen(course: course),
+                    )),
+                  ),
 
                   // Messaging
                   _SectionCard(

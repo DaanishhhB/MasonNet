@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const channelSchema = new mongoose.Schema({
   name: { type: String, required: true },
   icon: { type: String, default: '💬' },
+  createdBy: { type: String, default: null }, // null = default/main channel, otherwise user name
 });
 
 const courseSchema = new mongoose.Schema({
@@ -25,6 +26,7 @@ courseSchema.methods.toJSON = function() {
       id: ch._id.toString(),
       name: ch.name,
       icon: ch.icon,
+      createdBy: ch.createdBy || null,
     }));
   }
   delete obj._id;

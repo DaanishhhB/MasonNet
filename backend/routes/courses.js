@@ -92,4 +92,34 @@ router.get('/:id/students', auth, async (req, res) => {
   }
 });
 
+// POST /api/courses/:id/channels - Create a new channel in a course
+router.post('/:id/channels', auth, async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { name, icon } = req.body;
+    if (!name) return res.status(400).json({ error: 'Channel name is required' });
+
+    // Check for duplicate channel name
+    const existing = course.channels.find(ch => ch.name.toLowerCase() === name.toLowerCase());
+    if (existing) return res.status(400).json({ error: 'A channel with this name already exists' });
+
+    course.channels.push({
+      name,
+      icon: icon || '💬',
+      createdBy: user.name,
+    });
+
+    await course.save();
+    res.status(201).json(course.toJSON());
+  } catch (err) {
+    console.error('Create channel error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

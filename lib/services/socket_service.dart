@@ -6,18 +6,29 @@ class SocketService {
 
   /// Connect to the Socket.IO server with JWT auth
   static void connect(String token) {
-    if (_socket != null) return;
+    if (_socket != null) {
+      // If already connected, just ensure it's connected
+      if (!_socket!.connected) _socket!.connect();
+      return;
+    }
 
     _socket = io.io(
       ApiConfig.socketUrl,
       io.OptionBuilder()
           .setTransports(['websocket'])
           .setAuth({'token': token})
-          .disableAutoConnect()
+          .enableReconnection()
           .build(),
     );
 
-    _socket!.connect();
+    _socket!.onConnect((_) {
+      // Auto-join the feed room on connect
+      _socket?.emit('join-feed');
+    });
+
+    _socket!.onReconnect((_) {
+      _socket?.emit('join-feed');
+    });
   }
 
   /// Disconnect from the server
@@ -55,5 +66,25 @@ class SocketService {
   /// Stop listening for DMs
   static void offDm(void Function(dynamic) callback) {
     _socket?.off('new-dm', callback);
+  }
+
+  /// Listen for new feed posts
+  static void onNewPost(void Function(dynamic) callback) {
+    _socket?.on('new-post', callback);
+  }
+
+  /// Stop listening for new feed posts
+  static void offNewPost(void Function(dynamic) callback) {
+    _socket?.off('new-post', callback);
+  }
+
+  /// Listen for post updates (likes, etc.)
+  static void onPostUpdated(void Function(dynamic) callback) {
+    _socket?.on('post-updated', callback);
+  }
+
+  /// Stop listening for post updates
+  static void offPostUpdated(void Function(dynamic) callback) {
+    _socket?.off('post-updated', callback);
   }
 }
