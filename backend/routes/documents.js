@@ -51,7 +51,7 @@ async function extractStructuredContent(rawText, title, description) {
           content: `Document title: "${title}"\nDescription: "${description}"\n\nRaw extracted text:\n${inputText}`,
         },
       ],
-      max_tokens: 4096,
+      max_completion_tokens: 4096,
     });
     return completion.choices[0].message.content || rawText;
   } catch (err) {

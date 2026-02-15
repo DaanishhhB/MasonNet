@@ -49,7 +49,7 @@ A student asked a question in the class channel. Answer helpfully, concisely, an
             { role: 'system', content: systemPrompt },
             { role: 'user', content: question },
           ],
-          max_tokens: 512,
+          max_completion_tokens: 512,
         });
         reply = completion.choices[0].message.content;
         break;

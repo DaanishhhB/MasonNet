@@ -14,7 +14,7 @@ const router = express.Router();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const MODEL = 'o4-mini';
+const MODEL = 'gpt-4o-mini';
 
 // Retry helper for rate-limited OpenAI API calls
 async function chatWithRetry(messages, maxRetries = 3) {
