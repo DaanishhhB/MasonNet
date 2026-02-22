@@ -519,19 +519,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📬 Contact
 
-**Project Maintainer:** Your Name  
-**Email:** yourname@gmu.edu  
-**GitHub:** [@yourusername](https://github.com/yourusername)
+**Project Maintainer:** Tahir And Daanish  
+**Email:** twentysixprojects.business@gmail.com  
 
----
-
-<div align="center">
-
-**Made with 💚 for the GMU Patriots community**
-
-⭐ Star this repo if you find it helpful!
-
-[Report Bug](https://github.com/yourusername/masonnet/issues) • [Request Feature](https://github.com/yourusername/masonnet/issues) • [Documentation](https://github.com/yourusername/masonnet/wiki)
-
-</div>
 
